@@ -5,9 +5,8 @@
         # /trello deleteCard <CardName
         # /trello add <cardName> [adds to most recently accessed card, if none]
 
-from src.exceptions.bot_exceptions import InvalidCommandError
-from src.exceptions.trello_exceptions import InvalidListNameError
-
+from exceptions.bot_exceptions import InvalidCommandError
+from exceptions.trello_exceptions import InvalidListNameError
 
 # Assumption: Only one board that we're reading from
 class TrelloCommander(): 
@@ -27,39 +26,27 @@ class TrelloCommander():
 
     def run(self): 
         if (self.command not in self.commands): 
-            print("Invalid Command Error") 
             raise InvalidCommandError("Error: Command Unknown")
-
-        try: 
-            # getattr() can also get just attribute values
-            # result = getattr(obj, "method")(args)
-            tempObj = TrelloCommander(self.client, self.command)
-            result = getattr(tempObj, self.commands[self.command])()
-            return result
-        except (InvalidListNameError, InvalidCommandError) as e: 
-            raise InvalidCommandError("Error: List name not found OR not given") 
+        return getattr(self, self.commands[self.command])()
 
     # View the cards of a given list name
     def trelloView(self): 
         listName = self.arguement
         result = []
-        result.append("Getting cards for: " + listName) 
-        try: 
-            cards = self.getList(listName) 
-            for card in cards: 
-                result.append(card.name) 
-            result.append("Fin") 
-        except InvalidListNameError as e: 
-            result.append(e.message)
+        result.append("Cards for: " + listName) 
+        cards = self.getList(listName) 
+        for card in cards: 
+            result.append(card.name) 
+        result = "\n".join(result) 
         return result
     
     # View the names of all lists in "personal board"
     def trelloLists(self): 
         result = [] 
-        result.append("Getting list names...")
+        result.append("All list names...")
         for list in self.board.open_lists(): 
             result.append(list.name)
-        result.append("Fin") 
+        result = "\n".join(result) 
         return result
 
     # Create a new list
@@ -73,6 +60,8 @@ class TrelloCommander():
         except InvalidListNameError as e:    
             self.board.add_list(str(newListName))
             result.append("Successfully added list: " + newListName)
+
+        result = "\n".join(result) 
         return result
 
     # Deletes list from "personal board"
@@ -84,7 +73,7 @@ class TrelloCommander():
             self.getList(oldListName).close()
             result.append("Successfully closed list: " + oldListName)
         except InvalidListNameError as e:    
-            result.append(e.message) 
+            result.append(e.args[0]) 
         return result
     
     # Deletes the card from the recently accessed list

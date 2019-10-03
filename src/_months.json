@@ -1,1 +1,21 @@
-["january", "jan", "february", "feb", "march", "april", "may", "june", "july", "august", "aug", "september", "sept", "october", "oct", "november", "nov", "december", "dec"] 
+{ 
+    "january" : "01", 
+    "jan" : "01",  
+    "february" : "02", 
+    "feb" : "02",  
+    "march" : "03", 
+    "april" : "04", 
+    "may" : "05", 
+    "june" : "06", 
+    "july" : "07", 
+    "august" : "08", 
+    "aug" : "08", 
+    "september" : "09", 
+    "sept" : "09", 
+    "october" : "10", 
+    "oct" : "10", 
+    "november" : "11", 
+    "nov" : "11", 
+    "december" : "12",  
+    "dec" : "12"
+}  

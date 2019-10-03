@@ -1,175 +1,193 @@
-from __future__ import print_function
-import datetime
-import pickle
+
+from datetime import date, datetime
+import calendar
 import os.path
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+
 from src.env import env
+from src.fakeNLP import FakeNLP
 from src.exceptions.gCal_exceptions import InvalidCalenderNameError
 from src.exceptions.bot_exceptions import InvalidCommandError
 import json
-import re
 
-# If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+
 
 # Crappy crappy version of NLP.. 
-# Want to do this! 
-# https://www.analyticsvidhya.com/blog/2017/01/ultimate-guide-to-understand-implement-natural-language-processing-codes-in-python/
+# Want to do th
+# is! https://www.analyticsvidhya.com/blog/2017/01/ultimate-guide-to-understand-implement-natural-language-processing-codes-in-python/
 
 class GCal_Commander(): 
-    def __init__(self, arguments): 
-        self.creds = self.getCredentials() 
-        self.client = build('calender', 'v3', credentials=self.creds) 
-        self.now = datetime.datetime.utcnow().isoformat() + 'Z'
-
+    def __init__(self, gCalClient, arguements): 
+        self.client = gCalClient
+        self.now = date.today()
+        self.fakeNLP = FakeNLP()
         self.calenderID_map = None 
-        with open("src/calender_map.json", "r") as f: 
+        with open("src/_calenderID_map.json", "r") as f: 
             self.calenderID_map = json.loads(f.read()) 
-
+        
         self.arguements = arguements
         self.commands = { 
             "next" : "getNextEvent",
             "add" : "addEvent", 
-            "remove" : "removeEvent", 
             "week" : "getWeeklyEvents",
+            # "remove" : "removeEvent",  # TODO: Think about this later 
         }
-        
-    # Setup Credentials
-    def getCredentials(self): 
-        creds = None
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-
-            # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-                creds = flow.run_local_server(port=0)
-
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-        return creds
-
-    # Parse all the arguments 
-    def parseArguements(self): 
-
-        # Has to have at least two words 
-        if self.arguements.len() < 2: 
-            raise InvalidCommandError("Invalid command: " + " ".join(self.arguements))
-
-        # Pick up keywords 
-        command_indicator = self.arguements[0]
-        words = [x for x in self.arguements if x is not command_indicator]
-        time = getKeywordTime(words) 
-        month = getKeywordMonth(words) 
-        day = getKeywordDay(words) 
-        
-
-
-        if command_indicator == "next": 
-            # Look for a month 
-            for word in words: 
-                if ()
-        elif command_indicator == "add": 
-            # calender
-            # eventName 
-            # DATE/this/next 
-            # if (not number): 
-            #   get DAY_OF_WEEK   
-            #  DateTime can be given in: 
-            #  * DATE + MONTH=NONE + START_TIME=NONE
-            #  * this +  DAY_OF_WEEK + START_TIME=NONE  
-            #  * next +  DAY_OF_WEEK + START_TIME=NONE  
-# [word for word in words if word not in noise_list] 
-            # By default: 
-            #  * MONTH=this_month 
-            #  * START_TIME=whole_day 
-        elif command_indicator == "remove": 
-            return 
-        elif command_indicator == "week": 
-            return 
-        else: 
-            raise InvalidCommandError("Command Unknown: " + command_indicator) 
-        
-    def getKeywordTime(words): 
-        for word in words: 
-            if word[0] == "@":
-                time_str = word[1:]
-        
-        regexp = re.compile(r"\d:\d{2} ") 
-        if regexp.search(time_str): 
-            hour = int(time_str[0])
-            minute = inttime_str[2:]
-            print(hour + ":" + minute) 
-        
-        
-
-        return 
-    
-    def getKeywordMonth(words): 
-        with open("src/_months.json", "r") as f: 
-            _MONTHS = json.loads(f.read()) 
-        for word in words: 
-            if word in _MONTHS: 
-                return _MONTHS.get(word) 
-        return None
-
-    def getKeywordDay(words):
-        _DAYS_OF_THE_WEEK = None 
-        with open("src/_days_of_the_week.json", "r") as f: 
-            _DAYS_OF_THE_WEEK = json.loads(f.read()) 
-        for word in words: 
-            if word in _DAYS_OF_THE_WEEK: 
-                return _DAYS_OF_THE_WEEK.get(word) 
-            
-        return None 
-
-    # def deNoiseWords(words): 
-    #     _NOISE_WORDS = ["a", "any", "at", "as", "the", "my", "are", "when", "so", "of", "there", "his", "is", "it", "if"]
-    #     return 
 
     def run(self): 
 
-        # Check calender validity
-        if calenderName in calenderID_map: 
-            calenderID = self.calenderID_map.get(calenderName) 
-        else: 
-            raise InvalidCalenderNameError("Calender Name Unknown: " + calenderName)
+        # Has to have at least two words 
+        if len(self.arguements) < 2: 
+            command = " ".join(self.arguements)
+            raise InvalidCommandError("Invalid command: " + command)
 
+        command_indicator = self.arguements[0]
+        if command_indicator not in self.commands: 
+            raise InvalidCommandError("Error: Command " + command_indicator + " not found") 
+       
+        # Grab all keywords
+        words = [x for x in self.arguements if x is not command_indicator]
+        keywords = {} 
+        keywords["time"] = self.fakeNLP.getKeywordTime(words) 
+        keywords["date"] = self.fakeNLP.getKeywordDate(words) 
+        keywords["month"] = self.fakeNLP.getKeywordMonth(words) 
+        keywords["day"] = self.fakeNLP.getKeywordDay(words) 
+        keywords["week"] = self.fakeNLP.getKeywordWeek(words) 
+        keywords["eventType"] = self.fakeNLP.getKeywordEventType(words) 
+        # TODO: Improve getEventName 
+        keywords["eventName"] = words[1] 
+        
+        # Run the associated command
+        return getattr(self, self.commands[command_indicator])(keywords)
       
 
     # Get the next event given a particular calender
-    def getNextEvent(self, calenderName):
-        
+    def getNextEvent(self, keywords):
+        return_msg = []
+        calenderID = self.calenderID_map.get(keywords.get("eventType")) 
+        event_results = self.client.events().list(calendarId=calenderID, timeMin=self.now, maxResults=1, singleEvents=True, orderBy="startTime").execute() 
+        nextEvent = event_results["items"] 
 
-        # Get event 
+        # Format: {Event Name} on {if not today: day_of_week} {if startTime available: @startTime}
+        if nextEvent: 
+            eventDate = nextEvent["start"].get("date") 
+            eventDateTime = nextEvent["start"].get("dateTime") 
+            
+            format_string = keywords.get("eventName")
+            if eventDate != self.now: 
+                day_of_nextEvent =  calendar.day_name[eventDate.weekday()]
+            
+            # For now, find out what startTime is!! 
+            # If the event is today, get the start time
+            # if nextEvent["start"].get("dateTime") == None: 
+               
+            return_msg.append("dateTime: " + eventDateTime)    
+            return_msg.append(format_string)
+            return return_msg
+
+        return_msg.append("No upcoming " + keywords.get("eventType") + " found.") 
+        return return_msg
+
+
+    def addEvent(self, keywords): 
+
+        # Check if we have a valid eventType
+        if not (keywords.get("eventType") == "shift" or keywords.get("eventType") == "event"): 
+            return "Error: Calender not specified" 
+
+        # Get the yyyy-mm-dd string 
+        yearMonthDate_string = self.getDateMonthTimeString(keywords) 
+
+        # Get the time/AllDayEvent
+        # TODO: Eventually add in time..
+        # allDayEvent = False
+        # if keywords.get("time") == None:
+        #     allDayEvent = True 
+    
+        # Get the calender ID 
+        calenderID = self.calenderID_map().get(keywords.get("eventType")) 
+        self.addEvent(date)
+
+        # Make request object 
+        req_obj = { 
+            "summary" : keywords.get("eventName") + keywords.get("time"), 
+            "start" : { 
+                "date" : yearMonthDate_string
+            }, 
+            "end" : { 
+                "date" : yearMonthDate_string
+            }
+        }
+
+        event = self.client.events().insert(calendarId=calenderID, body=req_obj).execute()
         result = []
-        events = self.client.events().list(calendarId=calenderID, timeMin=self.now,
-                                        maxResults=1, singleEvents=True,
-                                        orderBy='startTime').execute()
-        events = events_result.get('items', [])
-
-    # if not events:
-    #     print('No upcoming events found.')
-    # for event in events:
-    #     start = event['start'].get('dateTime', event['start'].get('date'))
-    #     print(start, event['summary'])
-
-    # Adds an event to a calender
-    def addEvent(self, calender, newEventName, eventPeriod=None, wholeDayEvent=True): 
-        # insert(calendarId=*, body=*)
-        return 
+        return "Successfully added event: " + keywords.get("eventName") + " " + keywords.get("time") + " on " + yearMonthDate_string[0:2] + "/" + yearMonthDate_string[3:5] + "/" + yearMonthDate_string[6:10]
 
     # Removes an event given a calender
-    def removeEvent(self, calender, oldEventName): 
-        return 
+    # def removeEvent(self, keywords): 
+    #     return 
 
-    # Obtains a summary of this week's events [Not including UNSW calender] 
-    def getWeeklyEvents(self): 
-        return
+    # Obtains a summary of this week's events [in EVENTS calender]
+    def getWeeklyEvents(self, keywords):  
+        calenderID = self.calenderID_map.get("events") 
+        timeMin = self.now 
+        timeMax = self.now + datetime.timedelta(days=7)
+        events = self.client.events().list(calendarId=calenderID, timeMin=timeMinm, timeMax=timeMax, singleEvents=True, orderBy="startTime")
+
+        return_msg = ["Events in the next week: \n"]
+        for event in events["items"]: 
+            return_msg.append(event["summary"] + "on" + event["start"].get("date") + "\n")
+        return_msg.append("Fin\n") 
+        return return_msg
+
+    def getKeywordEventType(words): 
+
+        # Note: Since there's only 3, I'm not storing it, but can potentially store this too. 
+        eventTypes = ["class", "event", "shift"] 
+        for word in words: 
+            if word in eventTypes: 
+                return word 
+        
+        return None 
+
+    def getDateMonthYearString(self, keywords): 
+
+        date = "" 
+        month = ""
+        year = ""
+
+        # CASE_ONE: (+month) +date (+time) 
+        if keywords.get("date") != None:
+            date = keywords.get("date") 
+            year = self.now.year
+            if date < 0 or date > 31: 
+                date = (self.now + datetime.timedelta(days=1)).day
+
+            if keywords.get("month") == None: 
+                if date == "01": 
+                    month = int(keywords.get("month")) + 1 
+                    month = str(month) 
+                month = keywords.get("month") 
+            else: 
+                month = keywords.get("month")
+            
+
+        # CASE_TWO: +this/next + weekday 
+        elif keywords.get("week") != None and keywords.get("day") != None:
+            days_difference = int(keywords.get("day")) - int(self.now.day) 
+            new_date = None
+            if keywords.get("week") == "this": 
+                new_date = self.now + datetime.timedelta(days=days_difference)
+            elif keywords.get("week") == "next": 
+                days_difference += 7
+                new_date = self.now + datetime.timedelta(days=days_difference)
+
+            day = str(new_date.today)
+            month = str(new_date.month) 
+
+        else: 
+            tomorrow = self.now + datetime.timedelta(days=1) 
+            date = str(tomorrow.day)
+            month = str(tomorrow.month) 
+            year = str(tomorrow.year)
+
+        # Get the string to pass into the request 
+        yearMonthDate_string = year + "-" + month + "-" + date

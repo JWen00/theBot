@@ -1,4 +1,4 @@
 /credentials.json
 /calendarID_map.json
-/token.pickle
-
+*.pickle
+/_calenderID_map.json

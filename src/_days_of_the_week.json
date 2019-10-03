@@ -1,3 +1,17 @@
 { 
-    
+    "monday" : "01", 
+    "mon" : "01", 
+    "tueday" : "02", 
+    "tue" : "02", 
+    "wednesday" : "03", 
+    "wed" : "03", 
+    "thursday" : "04", 
+    "thur" : "04", 
+    "thurs" : "04", 
+    "friday" : "05", 
+    "fri" : "05", 
+    "saturday" : "06", 
+    "sat" : "06", 
+    "sunday" : "07", 
+    "sun" : "07"
 }
