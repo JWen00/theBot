@@ -54,7 +54,7 @@ class Bot(Client):
             self.deleteMessages(mid)
 
         messageMap = None  
-        with open("src/msg_reactions.json", "r") as fp: 
+        with open("config/msg_reactions.json", "r") as fp: 
             messageMap = json.load(fp) 
         if message_string in messageMap:
             self.deleteMessages(mid)
@@ -100,14 +100,14 @@ class Bot(Client):
 
     def manageTrelloCommand(self, msg):
         command = msg[0] 
-        arguement = msg[1] if len(msg) > 1 else None
+        argument = msg[1] if len(msg) > 1 else None
         return_message = []
         print("Running trello API...") 
-        trelloCommander = TrelloCommander(self.trelloClient, command, arguement, self.lastAccessedTrelloList)
+        trelloCommander = TrelloCommander(self.trelloClient, command, argument, self.lastAccessedTrelloList)
         return_message = trelloCommander.run() 
 
         if command == "view" : 
-            lastAccessedTrelloList = arguement
+            lastAccessedTrelloList = argument
         return return_message
    
     def manageCalenderCommand(self, msg): 

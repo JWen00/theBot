@@ -16,15 +16,16 @@ import json
 # is! https://www.analyticsvidhya.com/blog/2017/01/ultimate-guide-to-understand-implement-natural-language-processing-codes-in-python/
 
 class GCal_Commander(): 
-    def __init__(self, gCalClient, arguements): 
+    def __init__(self, gCalClient, arguments): 
         self.client = gCalClient
         self.now = date.today()
         self.fakeNLP = FakeNLP()
+        # ===
         self.calenderID_map = None 
-        with open("src/_calenderID_map.json", "r") as f: 
+        with open("config/calenderID_map.json", "r") as f: 
             self.calenderID_map = json.loads(f.read()) 
         
-        self.arguements = arguements
+        self.arguments = arguments
         self.commands = { 
             "next" : "getNextEvent",
             "add" : "addEvent", 
@@ -35,16 +36,16 @@ class GCal_Commander():
     def run(self): 
 
         # Has to have at least two words 
-        if len(self.arguements) < 2: 
-            command = " ".join(self.arguements)
+        if len(self.arguments) < 2: 
+            command = " ".join(self.arguments)
             raise InvalidCommandError("Invalid command: " + command)
 
-        command_indicator = self.arguements[0]
+        command_indicator = self.arguments[0]
         if command_indicator not in self.commands: 
             raise InvalidCommandError("Error: Command " + command_indicator + " not found") 
        
         # Grab all keywords
-        words = [x for x in self.arguements if x is not command_indicator]
+        words = [x for x in self.arguments if x is not command_indicator]
         keywords = {} 
         keywords["time"] = self.fakeNLP.getKeywordTime(words) 
         keywords["date"] = self.fakeNLP.getKeywordDate(words) 
