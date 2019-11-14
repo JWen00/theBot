@@ -1,12 +1,10 @@
 
 from datetime import date, datetime
 import calendar
-import os.path
+import os
 
-from src.env import env
-from src.fakeNLP import FakeNLP
-from src.exceptions.gCal_exceptions import InvalidCalenderNameError
-from src.exceptions.bot_exceptions import InvalidCommandError
+from .fakeNLP import FakeNLP
+from .exceptions import InvalidCalenderNameError, InvalidCommandError
 import json
 
 

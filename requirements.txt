@@ -4,4 +4,5 @@ google-auth==1.6.3
 google-auth-httplib2==0.0.3
 google-auth-oauthlib==0.4.0
 py-trello==0.15.0
-pydotenv==0.0.7
+python-dotenv==0.10.3
+

@@ -5,16 +5,15 @@
         # /trello deleteCard <CardName
         # /trello add <cardName> [adds to most recently accessed card, if none]
 
-from exceptions.bot_exceptions import InvalidCommandError
-from exceptions.trello_exceptions import InvalidListNameError
+from .exceptions import InvalidCommandError, InvalidListNameError
 
 # Assumption: Only one board that we're reading from
 class TrelloCommander(): 
-    def __init__(self, trelloClient, command, arguement=None, lastAccessed=None): 
+    def __init__(self, trelloClient, command, argument=None, lastAccessed=None): 
         self.client = trelloClient
         self.board = self.client.list_boards()[0]
         self.command = command 
-        self.arguement = arguement
+        self.argument = argument
         self.lastAccessed = lastAccessed
         self.commands = { 
             "view" : "trelloView",
@@ -31,7 +30,7 @@ class TrelloCommander():
 
     # View the cards of a given list name
     def trelloView(self): 
-        listName = self.arguement
+        listName = self.argument
         result = []
         result.append("Cards for: " + listName) 
         cards = self.getList(listName) 
@@ -51,7 +50,7 @@ class TrelloCommander():
 
     # Create a new list
     def trelloNewList(self): 
-        newListName = self.arguement
+        newListName = self.argument
         result = []
         try: 
             l = self.getList(newListName)
@@ -66,7 +65,7 @@ class TrelloCommander():
 
     # Deletes list from "personal board"
     def trelloDeleteList(self): 
-        oldListName = self.arguement
+        oldListName = self.argument
         result = []
         try: 
             l = self.getList(oldListName) 
@@ -78,7 +77,7 @@ class TrelloCommander():
     
     # Deletes the card from the recently accessed list
     def trelloDeleteCard(self): 
-        oldCardName = self.arguement
+        oldCardName = self.argument
         result = []
         if self.lastAccessed == None: 
             raise InvalidCommandError("Error: Must access list before deleting card from list")

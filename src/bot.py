@@ -4,35 +4,35 @@ from fbchat.models import *
 
 # Trello 
 from trello import TrelloClient 
-from trello_commander import TrelloCommander
+from .trello_commander import TrelloCommander
 
 # Exceptions 
-from exceptions.trello_exceptions import InvalidListNameError
-from exceptions.bot_exceptions import InvalidCommandError
+from .exceptions.trello_exceptions import InvalidListNameError
+from .exceptions.bot_exceptions import InvalidCommandError
 
 # Google Calender 
-from gCal_commander import GCal_Commander
+from .gCal_commander import GCal_Commander
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-# Google Shenanegans 
-# If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
 # Others 
 import os.path
 import json
 import pickle
-from env import env
 import re
 
+
 class Bot(Client):
-    def __init__(self, email, password, user_agent=None, max_tries=5, session_cookies=None, logging_level=20): 
-        super().__init__(email, password, user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36", max_tries=5, session_cookies=None, logging_level=20)
+    def __init__(self, email, password, **kwargs):
+        # user_agent=None, max_tries=5, session_cookies=None, logging_level=20 
+        super().__init__(email, password, **kwargs)
+        self.botID = self.getSession()["c_user"]
         self.trelloClient = TrelloClient( 
-            api_key=env["TRELLO_API_KEY"],
-            api_secret=env["TRELLO_SECRET_KEY"],
-            token=env["TRELLO_TOKEN"],
+            api_key=os.getenv("TRELLO_API_KEY"),
+            api_secret=os.getenv("TRELLO_SECRET_KEY"),
+            token=os.getenv("TRELLO_TOKEN"),
             )
         self.gCalCredentials = self.getGCalCredentials()
         self.gCalClient = build('calendar', 'v3', credentials=self.gCalCredentials)
@@ -62,7 +62,7 @@ class Bot(Client):
                 self.sendLocalFiles(messageMap[message_object.text], thread_id=thread_id, thread_type=ThreadType.USER)
             
         # Commands sent to self
-        if thread_id == env["THREAD_ID_SELF"]: 
+        if thread_id == self.botID:
             message_string = message_string.lower() 
             message_string = message_string.split() 
 
@@ -79,7 +79,7 @@ class Bot(Client):
         creds = None
 
         try:
-            with open('token.pickle', 'rb') as token:
+            with open('config/token.pickle', 'rb') as token:
                 creds = pickle.load(token)
         except Exception:
             pass
@@ -89,11 +89,11 @@ class Bot(Client):
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file('config/credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
 
         # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
+        with open('config/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
 
         return creds
@@ -112,47 +112,39 @@ class Bot(Client):
    
     def manageCalenderCommand(self, msg): 
         command = msg[0] 
-        arguements = [x for x in msg if x is not command]
+        arguments = [x for x in msg if x is not command]
         return_message = []
-        print("Running google calender API...")
-        gCalCommander = GCal_Commander(self.gCalClient, arguements)
+        print("Running Google Calender API...")
+        gCalCommander = GCal_Commander(self.gCalClient, arguments)
         gCalCommander.run()
         return return_message
     
     def checkCommand(self, command): 
         apiTarget = command[0] 
-        apiCommand = [x for x in command if x is not apiTarget]
+        arguments = command[1:]
 
         # Check api target exists
         if apiTarget != "/cal" or apiTarget != "/trello": 
-            return_message = "Unknown API called"
-            return (return_message, False)
-
-        # Check api command exists 
-        if len(command) == 0:
-            return_message = "Need arguments :("
-            return (return_message, False) 
+            return ("Unknown API called", False)
 
         # Get Success Message 
         if apiTarget == "/cal": 
-            return_message = "Running gCal Command: " + apiCommand[0] 
+            return_message = "Running gCal Command: " + arguments[0] 
             return (return_message, True) 
         
         elif apiTarget == "/trello": 
-            return_message = "Running Trello Command: " + apiCommand[0] 
+            return_message = "Running Trello Command: " + arguments[0] 
             return (return_message, True) 
     
     def handleCommand(self, command): 
         try:
-            if api_indicator == "/trello": 
-                return_message = self.manageTrelloCommand(command)
+            if command == "/trello": 
+                return self.manageTrelloCommand(command)
 
-            elif api_indicator == "/cal": 
-                return_message = self.manageCalenderCommand(command)
+            elif command == "/cal": 
+                return self.manageCalenderCommand(command)
             
         except (InvalidCommandError, InvalidListNameError) as e: 
-            return_message = e.args[0]
-
-        return return_message
+            return e.args[0]
 
     
