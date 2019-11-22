@@ -1,2 +1,0 @@
-class InvalidListNameError(Exception): 
-    pass

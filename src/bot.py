@@ -3,12 +3,9 @@ from fbchat import Client
 from fbchat.models import *
 
 # Trello 
-from trello import TrelloClient 
-from .trello_commander import TrelloCommander
+from .trelloWrapper import TrelloWrapper
 
-# Exceptions 
-from .exceptions.trello_exceptions import InvalidListNameError
-from .exceptions.bot_exceptions import InvalidCommandError
+
 
 # Google Calender 
 from .gCal_commander import GCal_Commander
@@ -29,11 +26,7 @@ class Bot(Client):
         # user_agent=None, max_tries=5, session_cookies=None, logging_level=20 
         super().__init__(email, password, **kwargs)
         self.botID = self.getSession()["c_user"]
-        self.trelloClient = TrelloClient( 
-            api_key=os.getenv("TRELLO_API_KEY"),
-            api_secret=os.getenv("TRELLO_SECRET_KEY"),
-            token=os.getenv("TRELLO_TOKEN"),
-            )
+
         self.gCalCredentials = self.getGCalCredentials()
         self.gCalClient = build('calendar', 'v3', credentials=self.gCalCredentials)
 
