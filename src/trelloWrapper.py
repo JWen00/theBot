@@ -18,6 +18,7 @@ class TrelloWrapper():
         commandMap = { 
             "new" : self.createNewList,
             "view" : self.trelloView,
+            "add" : self.trelloAddCard, 
             "remove" : self.trelloDeleteCard, 
         }
 
@@ -25,32 +26,38 @@ class TrelloWrapper():
         
         return commandMap[command](args)
 
-    def doesListExist(listID): 
+
+
+    def getListByID(self, listID): 
         for l in self.lists: 
-            if l.name == listID: return True
-        return False
+            if l.name == listID: 
+                return l 
+        
+        return None
 
     def createNewList(self, listID): 
         """ Create a new list on board, cannot repeat """ 
-
-        # List exists aready
-        if self.doesListExist(listID): return ">> This list already exists"
         
         self.board.add_list(str(listID)) 
-        return ">> Added new list!" 
 
     def trelloView(self, listID): 
         """ View the cards of given list """
 
-        if not self.doesListExist(listID): return ">> This list does not exist"
+        l = self.getListByID(listID) 
 
         result = ""
-        for l in self.lists: 
-            if l.name == listID: 
-                for card in l: 
-                    result.append(f' * {card.name}\n')
-                return result 
+        for card in l: result.append(f' * {card.name}\n')
+        return result 
     
+    def trelloAddCard(self, args): 
+        """ Addes a card in a list """ 
+
+        listID = args["threadID"] 
+        cardName = args["message"] 
+
+        l = self.getListByID(listID) 
+        l.append(cardName) # Check this 
+        
     
     def trelloDeleteCard(self, args): 
         """ Deletes an item from a list """ 
