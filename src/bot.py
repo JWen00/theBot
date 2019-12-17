@@ -1,12 +1,10 @@
 # Fbchat
-from fbchat import Client
-from fbchat.models import *
+from fbchat import *
+import asyncio 
 
 # Trello 
 from .trelloWrapper import TrelloWrapper
-
-# # Google Calender 
-# from .gCal_commander import GCal_Commander
+ 
 # from googleapiclient.discovery import build
 # from google_auth_oauthlib.flow import InstalledAppFlow
 # from google.auth.transport.requests import Request
@@ -19,10 +17,8 @@ import re
 
 
 class Bot(Client):
-    def __init__(self, email, password, **kwargs):
-        # user_agent=None, max_tries=5, session_cookies=None, logging_level=20 
-        super().__init__(email, password, **kwargs)
-        # self.botID = self.getSession()["c_user"] # TODO: Deal with session things later 
+    def __init__(self):
+        super().__init__()
 
         self._trello = TrelloWrapper() 
         # self._gCalCredentials = self.getGCalCredentials()
@@ -34,36 +30,37 @@ class Bot(Client):
                 self._msgReactions = json.load(f) 
 
             self.activeThreads = []
-            with open("config/active_chats.txt") as f: 
+            with open("config/active_chats.txt") as f:
                 self.activeThreads = f.read().splitlines() 
 
         except FileNotFoundError: 
             pass 
 
-    def onMessage(self, mid, author_id, message_object, thread_id, thread_type, **kwargs):
-
+    async def on_message(self, mid=None, author_id=None, message_object=None, thread_id=None,
+                         thread_type=ThreadType.USER, at=None, metadata=None, msg=None):
+                         
         if message_object.text == None: return 
-
         message_string = str(message_object.text) 
-        message_string = message_string.lower() 
         message_string = message_string.split() 
         command = message_string[0]
-        if command == "/addChat": 
-            self.activeThreads.append(thread_id)  
-            self.trelloWrapper.processCommand(new, thread_id)
-            self.sendMessage(">> JenniBot now works in this chat!", thread_id=thread_id, thread_type=ThreadType.USER)
-            return
+        print(f'Got command {command}')
 
-        if thread_id not in self.activeThreads: return 
+        # Adds chat to activeChats
+        if command == "/addChat": await self.addChat(mid, thread_id)
+
+        if thread_id not in self.activeThreads: 
+            print("Stuck!")
+            return  
 
         commands = { 
-            "/week" : self.getWeekEvents, 
-            "/addEvent" : self.addEvent,
-            "/list" : self.getList, 
-            "/add" : self.addTolist, 
-            "/remove" : self.removeFromList, 
-            "/where" : self.getCurrentEvent,
-            "/help" : self.sendHelp, 
+            "/week" :       self.getWeekEvents, 
+            "/addEvent" :   self.addEvent,
+            "/list" :       self.getList, 
+            "/add" :        self.addTolist, 
+            "/remove" :     self.removeFromList, 
+            "/where" :      self.getCurrentEvent,
+            "/help" :       self.sendHelp, 
+            "/add" :        self.mentionAll, 
         }
 
         if command in commands: 
@@ -74,13 +71,44 @@ class Bot(Client):
                 "threadID" : thread_id
             }
 
-            self.sendMessage(commands[command](args), thread_id=thread_id, thread_type=ThreadType.USER)
+            await self.send(
+                Message(text=commands[command](args)), 
+                thread_id=thread_id, 
+                thread_type=thread_type)
             return 
 
         if message_string in messageMap:
-            self.sendLocalFiles(messageMap[message_object.text], thread_id=thread_id, thread_type=ThreadType.USER)
+            await self.send_remote_files(messageMap[message_object.text], thread_id=thread_id, thread_type=thread_type)
             return 
         
+    async def addChat(self, mid, thread_id): 
+        await self.delete_messages([mid]) # Delete the command 
+            
+        # Update the activeThreads File
+        if thread_id not in self.activeThreads: 
+            self.activeThreads.append(thread_id)
+            print(self.activeThreads)
+            try:
+                with open("config/active_chats.txt", "a") as f: 
+                    f.write(thread_id + "\n") 
+            except FileNotFoundError: 
+                with open("config/active_chats.txt", "w") as f: 
+                    f.write(thread_id + "\n") 
+            msg = self.trelloWrapper.processCommand(new, thread_id)
+
+        else:
+            print("Thread ID in active threads") 
+            msg = ">> This chat is already active!"
+
+        print(msg)
+        await self.send(
+            Message(text="msg"), 
+            thread_id=thread_id, 
+            thread_type=thread_type)
+
+        print(f"sent {msg}")
+    def mentionAll(self, args): return ">> Function not yet written" 
+
     def getWeekEvents(self, args): return ">> Function not yet written" 
     
     def addEvent(self, args): return ">> Function not yet written" 
@@ -89,7 +117,7 @@ class Bot(Client):
     
     def addTolist(self, args): return self.trelloWrapper.processCommand("add", args)
 
-    def removeFromList(self, args): return self.trelloWrapper(processCommand("remove", args)
+    def removeFromList(self, args): return self.trelloWrapper(processCommand("remove", args))
 
     def getCurrentEvent(self, args): return ">> Function not yet written" 
     

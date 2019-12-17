@@ -1,33 +1,42 @@
 from src.bot import Bot
 import os
 import pickle 
-
+import asyncio
 from dotenv import load_dotenv
 from pathlib import Path
-load_dotenv(dotenv_path="config/.env", verbose=True)
+load_dotenv(dotenv_path="config/.env")
 
-# Check if session cookies exist 
-sessionCookiePath = "config/session_cookies.pickle"
-sessionCookie = None
-if os.path.exists(sessionCookiePath): 
-    with open(sessionCookiePath, 'rb') as cookie: 
-        sessionCookie = pickle.load(cookie) 
 
-# Create the bot 
-USERNAME = os.getenv("FB_USERNAME")
-PASSWORD = os.getenv("FB_PASS")
+loop = asyncio.get_event_loop()
 
-if not USERNAME or not PASSWORD:
-    raise Exception("Username / password not supplied")
-if sessionCookie is not None:
-    print("Using session cookies to log in")
-client = Bot(USERNAME, PASSWORD, session_cookies=sessionCookie)
+async def start(): 
+    USERNAME = os.getenv("FB_USERNAME")
+    PASSWORD = os.getenv("FB_PASS") 
+    if not USERNAME or not PASSWORD: raise Exception("Username / password not supplied")
 
-# Save the session cookies 
-session = client.getSession()
-with open (sessionCookiePath, 'wb') as cookie: 
-    pickle.dump(session, cookie) 
+    sessionCookiePath = "config/session_cookies.pickle"
+    sessionCookie = None
+    if os.path.exists(sessionCookiePath): 
+        with open(sessionCookiePath, 'rb') as cookie: 
+            sessionCookie = pickle.load(cookie) 
 
-# Listen..
-client.listen()  
+
+    print(f'Logging into {USERNAME}...')
+    bot = Bot() 
+    await bot.start(USERNAME, PASSWORD, session_cookies=sessionCookie)
+
+    if sessionCookie is not None: 
+        print("Using session cookies to log in")
+    else: 
+        print("Saved session cookies") 
+        session = client.getSession()
+        with open (sessionCookiePath, 'wb') as cookie: 
+            pickle.dump(session, cookie) 
+
+    print("Logged in!")
+    bot.listen() 
+
+loop.run_until_complete(start()) 
+loop.run_forever() 
+
 

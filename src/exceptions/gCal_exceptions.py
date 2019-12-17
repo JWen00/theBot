@@ -1,2 +1,0 @@
-class InvalidCalenderNameError(Exception): 
-    pass
